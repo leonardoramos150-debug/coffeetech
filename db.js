@@ -1,23 +1,17 @@
+// db.js
 const mysql = require('mysql2/promise');
 require('dotenv').config();
 
-const connectDB = async () => {
-  try {
-    const connection = await mysql.createConnection({
-      host: process.env.DB_HOST,
-      user: process.env.DB_USER,
-      password: process.env.DB_PASSWORD,
-      database: process.env.DB_NAME
-    });
+const pool = mysql.createPool({
+  host: process.env.DB_HOST,
+  user: process.env.DB_USER,
+  password: process.env.DB_PASSWORD,
+  database: process.env.DB_NAME,
+  waitForConnections: true,
+  connectionLimit: 10,
+  queueLimit: 0
+});
 
-    console.log('🔌 MySQL Conectado com Sucesso!');
-    return connection;
+console.log('🔌 Pool de conexões MySQL criado com sucesso!');
 
-  } catch (error) {
-    console.error('Erro fatal ao conectar no banco:', error.message);
-    // Encerra o app se não conectar, pois sem banco nada funciona
-    process.exit(1); 
-  }
-};
-
-module.exports = connectDB;
+module.exports = pool;

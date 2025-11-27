@@ -1,60 +1,30 @@
+// server.js
 const express = require('express');
-const connectDB = require('./db');
+const pool = require('./db'); // apenas para garantir que a pool seja criada
+const usuarioRoutes = require('./routes/usuarioRoutes');
 
 const app = express();
 const PORT = 3000;
 
-// Variável Global para guardar a conexão
-let connection = null;
+// MIDDLEWARES
+app.use(express.json());
+app.use(express.static('public'));
 
-// MIDDLEWARES (Configurações)
-app.use(express.json()); // Permite ler JSON enviado pelo frontend
-app.use(express.static('public')); // Serve os arquivos da pasta public
+// ROTAS
+app.use(usuarioRoutes);
 
-// --- ROTAS DA API (O CRUD) ---
-
-// 1. LEITURA (GET)
-app.get('/usuarios', async (req, res) => {
-  try {
-    const [rows] = await connection.query('SELECT * FROM usuarios');
-    res.json(rows);
-  } catch (error) {
-    console.error(error);
-    res.status(500).send('Erro ao buscar usuários');
-  }
-});
-
-// 2. CRIAÇÃO (POST)
-app.post('/usuarios', async (req, res) => {
-  const { nome, email } = req.body;
-  try {
-    // As '?' protegem o banco contra hackers (SQL Injection)
-    await connection.query('INSERT INTO usuarios (nome, email) VALUES (?, ?)', [nome, email]);
-    res.status(201).send('Criado com sucesso');
-  } catch (error) {
-    console.error(error);
-    res.status(500).send('Erro ao cadastrar');
-  }
-});
-
-// 3. REMOÇÃO (DELETE)
-app.delete('/usuarios/:id', async (req, res) => {
-  const { id } = req.params;
-  try {
-    await connection.query('DELETE FROM usuarios WHERE id = ?', [id]);
-    res.send('Usuário deletado');
-  } catch (error) {
-    console.error(error);
-    res.status(500).send('Erro ao deletar');
-  }
-});
-
-// --- INICIALIZAÇÃO ---
-
+// INICIALIZAÇÃO DO SERVIDOR
 const startServer = async () => {
-  // Conecta no banco antes de abrir o servidor
-  connection = await connectDB();
-  
+  try {
+    // Testa uma conexão rápida na pool antes de subir o servidor
+    const conn = await pool.getConnection();
+    conn.release();
+    console.log('✅ Teste de conexão MySQL OK');
+  } catch (err) {
+    console.error('❌ Erro ao conectar no MySQL:', err.message);
+    process.exit(1);
+  }
+
   app.listen(PORT, () => {
     console.log(`🚀 Servidor rodando em http://localhost:${PORT}`);
     console.log(`📡 Painel Admin disponível em http://localhost:${PORT}/admin.html`);
